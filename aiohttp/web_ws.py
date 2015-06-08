@@ -59,7 +59,7 @@ class WebSocketResponse(StreamResponse):
             self.headers[k] = v
         self.force_close()
 
-        resp_impl = super().start(request)
+        resp_impl = yield from super().start(request)
 
         self._reader = request._reader.set_parser(parser)
         self._writer = writer

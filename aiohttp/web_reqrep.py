@@ -13,6 +13,7 @@ from urllib.parse import urlsplit, parse_qsl, unquote
 from types import MappingProxyType
 
 from . import hdrs
+from . import signals
 from .helpers import reify
 from .multidict import (CIMultiDictProxy,
                         CIMultiDict,
@@ -531,10 +532,15 @@ class StreamResponse(HeadersMixin):
         else:
             return None
 
+    @asyncio.coroutine
     def start(self, request):
         resp_impl = self._start_pre_check(request)
         if resp_impl is not None:
             return resp_impl
+
+        yield from request.app.dispatch_signal(signals.response_start,
+                                               {'request': request,
+                                                'response': self})
 
         self._req = request
         keep_alive = self._keep_alive

@@ -17,11 +17,13 @@ __all__ = (web_reqrep.__all__ +
 
 
 import asyncio
+import collections
 
 from . import hdrs
 from .abc import AbstractRouter, AbstractMatchInfo
 from .log import web_logger
 from .server import ServerHttpProtocol
+from .signals import Signal
 
 
 class RequestHandler(ServerHttpProtocol):
@@ -91,7 +93,7 @@ class RequestHandler(ServerHttpProtocol):
         except HTTPException as exc:
             resp = exc
 
-        resp_msg = resp.start(request)
+        resp_msg = yield from resp.start(request)
         yield from resp.write_eof()
 
         # notify server about keep-alive
@@ -188,6 +190,7 @@ class Application(dict):
         self._router = router
         self._handler_factory = handler_factory
         self._finish_callbacks = []
+        self._signals = collections.defaultdict(list)
         self._loop = loop
         self.logger = logger
 
@@ -231,6 +234,22 @@ class Application(dict):
 
     def register_on_finish(self, func, *args, **kwargs):
         self._finish_callbacks.insert(0, (func, args, kwargs))
+
+    def add_signal_handler(self, signal, callback):
+        if not isinstance(signal, Signal):
+            raise TypeError("{!r} is not a Signal instance".format(signal))
+        signal.check_callback_valid(callback)
+        if not asyncio.iscoroutine(callback):
+            callback = asyncio.coroutine(callback)
+        self._signals[signal].append(callback)
+
+    @asyncio.coroutine
+    def dispatch_signal(self, signal, kwargs):
+        try:
+            for callback in self._signals[signal]:
+                yield from callback(**kwargs)
+        except Exception as e:
+            raise signals.SignalCallbackException from e
 
     def __call__(self):
         """gunicorn compatibility"""

@@ -189,7 +189,7 @@ class StaticRoute(Route):
 
         if single_chunk:
             resp.content_length = file_size
-        resp.start(request)
+        yield from resp.start(request)
 
         with open(filepath, 'rb') as f:
             chunk = f.read(self._chunk_size)
