@@ -414,7 +414,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             msg = yield from ws.receive_str()
             ws.send_str(msg+'/answer')
@@ -438,7 +438,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             msg = yield from ws.receive_bytes()
             ws.send_bytes(msg+b'/answer')
@@ -465,7 +465,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             msg = yield from ws.receive_bytes()
             ws.ping()
@@ -502,7 +502,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             msg = yield from ws.receive_bytes()
             ws.ping()
@@ -543,7 +543,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             yield from ws.receive_bytes()
             ws.send_str('test')
@@ -574,7 +574,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             try:
                 yield from ws.receive_bytes()
@@ -607,7 +607,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
 
             yield from ws.receive_bytes()
             ws.send_str('test')
@@ -645,7 +645,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
             yield from ws.receive_bytes()
             ws.send_str('test')
             yield from asyncio.sleep(10, loop=self.loop)
@@ -672,7 +672,7 @@ class TestWebSocketClientFunctional(unittest.TestCase):
         @asyncio.coroutine
         def handler(request):
             ws = web.WebSocketResponse()
-            ws.start(request)
+            yield from ws.start(request)
             yield from ws.receive_bytes()
             ws.send_str('test')
             yield from asyncio.sleep(10, loop=self.loop)

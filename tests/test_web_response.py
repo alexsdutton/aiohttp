@@ -109,16 +109,16 @@ class TestStreamResponse(unittest.TestCase):
         resp = StreamResponse()
         self.assertIsNone(resp.keep_alive)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
 
         self.assertTrue(msg.send_headers.called)
-        self.assertIs(msg, resp.start(req))
+        self.assertIs(msg, self.loop.run_until_complete(resp.start(req)))
 
         self.assertTrue(resp.keep_alive)
 
         req2 = self.make_request('GET', '/')
         with self.assertRaises(RuntimeError):
-            resp.start(req2)
+            self.loop.run_until_complete(resp.start(req2))
 
     @mock.patch('aiohttp.web_reqrep.ResponseImpl')
     def test_chunked_encoding(self, ResponseImpl):
@@ -129,7 +129,7 @@ class TestStreamResponse(unittest.TestCase):
         resp.enable_chunked_encoding()
         self.assertTrue(resp.chunked)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertTrue(msg.chunked)
 
     @mock.patch('aiohttp.web_reqrep.ResponseImpl')
@@ -141,7 +141,7 @@ class TestStreamResponse(unittest.TestCase):
         resp.enable_chunked_encoding(chunk_size=8192)
         self.assertTrue(resp.chunked)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertTrue(msg.chunked)
         msg.add_chunking_filter.assert_called_with(8192)
         self.assertIsNotNone(msg.filter)
@@ -156,7 +156,7 @@ class TestStreamResponse(unittest.TestCase):
         resp.enable_compression()
         self.assertTrue(resp.compression)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertFalse(msg.add_compression_filter.called)
 
     @mock.patch('aiohttp.web_reqrep.ResponseImpl')
@@ -169,7 +169,7 @@ class TestStreamResponse(unittest.TestCase):
         resp.enable_compression(force=True)
         self.assertTrue(resp.compression)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertTrue(msg.add_compression_filter.called)
         self.assertIsNotNone(msg.filter)
 
@@ -185,13 +185,13 @@ class TestStreamResponse(unittest.TestCase):
         resp.enable_compression()
         self.assertTrue(resp.compression)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertTrue(msg.add_compression_filter.called)
         self.assertIsNotNone(msg.filter)
 
     def test_write_non_byteish(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
 
         with self.assertRaises(AssertionError):
             resp.write(123)
@@ -204,7 +204,7 @@ class TestStreamResponse(unittest.TestCase):
 
     def test_cannot_write_after_eof(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
 
         resp.write(b'data')
         self.writer.drain.return_value = ()
@@ -223,7 +223,7 @@ class TestStreamResponse(unittest.TestCase):
 
     def test_cannot_write_eof_twice(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
 
         resp.write(b'data')
         self.writer.drain.return_value = ()
@@ -236,13 +236,13 @@ class TestStreamResponse(unittest.TestCase):
 
     def test_write_returns_drain(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
 
         self.assertEqual((), resp.write(b'data'))
 
     def test_write_returns_empty_tuple_on_empty_data(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
 
         self.assertEqual((), resp.write(b''))
 
@@ -337,14 +337,14 @@ class TestStreamResponse(unittest.TestCase):
         resp.force_close()
         self.assertFalse(resp.keep_alive)
 
-        msg = resp.start(req)
+        msg = self.loop.run_until_complete(resp.start(req))
         self.assertFalse(resp.keep_alive)
         self.assertTrue(msg.closing)
 
     def test___repr__(self):
         req = self.make_request('GET', '/path/to')
         resp = StreamResponse(reason=301)
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.assertEqual("<StreamResponse 301 GET /path/to >", repr(resp))
 
     def test___repr__not_started(self):
@@ -356,7 +356,7 @@ class TestStreamResponse(unittest.TestCase):
                                     True, False)
         req = self.request_from_message(message)
         resp = StreamResponse()
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.assertFalse(resp.keep_alive)
 
         headers = CIMultiDict(Connection='keep-alive')
@@ -364,7 +364,7 @@ class TestStreamResponse(unittest.TestCase):
                                     False, False)
         req = self.request_from_message(message)
         resp = StreamResponse()
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.assertEqual(resp.keep_alive, True)
 
     def test_keep_alive_http09(self):
@@ -373,7 +373,7 @@ class TestStreamResponse(unittest.TestCase):
                                     False, False)
         req = self.request_from_message(message)
         resp = StreamResponse()
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.assertFalse(resp.keep_alive)
 
 
@@ -476,7 +476,7 @@ class TestResponse(unittest.TestCase):
 
         self.writer.write.side_effect = append
 
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.loop.run_until_complete(resp.write_eof())
         txt = buf.decode('utf8')
         self.assertRegex(txt, 'HTTP/1.1 200 OK\r\nCONTENT-LENGTH: 0\r\n'
@@ -496,7 +496,7 @@ class TestResponse(unittest.TestCase):
 
         self.writer.write.side_effect = append
 
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.loop.run_until_complete(resp.write_eof())
         txt = buf.decode('utf8')
         self.assertRegex(txt, 'HTTP/1.1 200 OK\r\nCONTENT-LENGTH: 4\r\n'
@@ -517,7 +517,7 @@ class TestResponse(unittest.TestCase):
 
         self.writer.write.side_effect = append
 
-        resp.start(req)
+        self.loop.run_until_complete(resp.start(req))
         self.loop.run_until_complete(resp.write_eof())
         txt = buf.decode('utf8')
         self.assertRegex(txt, 'HTTP/1.1 200 OK\r\nCONTENT-LENGTH: 0\r\n'
@@ -550,7 +550,7 @@ class TestResponse(unittest.TestCase):
 
     def test_started_when_started(self):
         resp = StreamResponse()
-        resp.start(self.make_request('GET', '/'))
+        self.loop.run_until_complete(resp.start(self.make_request('GET', '/')))
         self.assertTrue(resp.started)
 
     def test_drain_before_start(self):
